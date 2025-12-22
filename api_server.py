@@ -13,7 +13,7 @@ import os
 from calculator import ExchangeRateProvider, ExchangeCalculator, CommissionCalculator
 
 # Настройка Flask для продакшена (отдаёт статические файлы и API)
-app = Flask(__name__, static_folder='.', static_url_path='')
+app = Flask(__name__, static_folder='.')
 CORS(app)  # Разрешаем CORS для локальной разработки
 
 # Маршрут для главной страницы
@@ -142,9 +142,9 @@ async def get_timestamp():
     return datetime.now().isoformat()
 
 
-@app.route('/')
-def index():
-    """Главная страница API"""
+@app.route('/api')
+def api_info():
+    """Информация об API"""
     return jsonify({
         'name': 'Exchange Calculator API',
         'version': '1.0.0',
@@ -154,6 +154,25 @@ def index():
             '/api/health': 'GET - Проверка здоровья'
         }
     })
+
+
+# Маршруты для статических файлов (CSS, JS) - должен быть последним!
+@app.route('/<path:filename>')
+def static_files(filename):
+    """Отдача статических файлов (CSS, JS, и т.д.)"""
+    # Игнорируем API маршруты
+    if filename.startswith('api'):
+        return '', 404
+    
+    # Разрешаем только известные статические файлы
+    allowed_extensions = ['.css', '.js', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico']
+    if not any(filename.endswith(ext) for ext in allowed_extensions):
+        return '', 404
+    
+    try:
+        return app.send_static_file(filename)
+    except:
+        return '', 404
 
 
 if __name__ == '__main__':
